@@ -1,59 +1,56 @@
-const express = require('express');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
-require('dotenv').config();
+import express from "express";
+import cors from "cors";
+import nodemailer from "nodemailer";
+import 'dotenv/config';
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Разрешаем только фронту с Vercel стучаться
+app.use(cors({
+  origin: 'https://20250001hy-german-t-hy-multi-servic.vercel.app/' // поменяй на свой фронт
+}));
+
 app.use(express.json());
 
-// Проверка переменных окружения
-const { SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_PORT, PORT } = process.env;
-if (!SMTP_USER || !SMTP_PASS || !SMTP_HOST || !SMTP_PORT || !PORT) {
-  console.error('Ошибка: Не все переменные окружения заданы!');
-  process.exit(1);
-}
-
-// Настройка почтового транспорта
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: Number(SMTP_PORT),
-  secure: false, // true если SSL/TLS (обычно 465)
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS
-  }
-});
-
-// Тестовый маршрут для проверки сервера
-app.get('/', (req, res) => {
-  res.send('Backend is alive!');
-});
-
-// Маршрут для отправки письма
-app.post('/send', async (req, res) => {
+// Эндпоинт для формы
+app.post("/send", async (req, res) => {
   const { name, email, message } = req.body;
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'Все поля обязательны' });
+
+  if(!name || !email || !message) {
+    return res.status(400).json({ ok: false, error: "Все поля обязательны" });
   }
 
   try {
-    await transporter.sendMail({
-      from: `"${name}" <${email}>`,
-      to: SMTP_USER,
-      subject: `Сообщение с сайта от ${name}`,
-      text: message
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
     });
-    res.json({ success: true });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: process.env.MAIL_TO, // куда будут приходить письма
+      subject: "Новая заявка с сайта",
+      text: `Имя: ${name}\nEmail: ${email}\nСообщение: ${message}`
+    });
+
+    res.json({ ok: true });
   } catch (err) {
-    console.error('Ошибка при отправке письма:', err);
-    res.status(500).json({ error: 'Ошибка при отправке письма' });
+    console.error(err);
+    res.status(500).json({ ok: false, error: "Ошибка отправки письма" });
   }
 });
 
-// Старт сервера
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Проверка сервера
+app.get("/", (req, res) => {
+  res.send("Бэкенд живой!");
+});
+
+// Порт Railway
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server is running");
 });
