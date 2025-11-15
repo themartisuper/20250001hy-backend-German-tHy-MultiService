@@ -5,22 +5,30 @@ import 'dotenv/config';
 
 const app = express();
 
-// Разрешаем только фронту с Vercel стучаться
-app.use(cors({
-  origin: '*' // временно для теста
-}));
+// ⚡ CORS — временно разрешаем все для теста
+app.use(cors({ origin: '*' }));
 
-
+// ⚡ JSON парсер
 app.use(express.json());
 
-// Эндпоинт для формы
+// ⚡ Проверка сервера
+app.get("/", (req, res) => {
+  res.send("Бэкенд живой!");
+});
+
+// ⚡ Эндпоинт для формы
 app.post("/send", async (req, res) => {
+  console.log("POST /send body:", req.body);
   const { name, email, message } = req.body;
 
   if(!name || !email || !message) {
     return res.status(400).json({ ok: false, error: "Все поля обязательны" });
   }
 
+  // Отвечаем клиенту сразу
+  res.json({ ok: true });
+
+  // ⚡ Асинхронная отправка письма, чтобы прокси не резал соединение
   try {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -34,24 +42,18 @@ app.post("/send", async (req, res) => {
 
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: process.env.MAIL_TO, // куда будут приходить письма
+      to: process.env.MAIL_TO,
       subject: "Новая заявка с сайта",
       text: `Имя: ${name}\nEmail: ${email}\nСообщение: ${message}`
     });
 
-    res.json({ ok: true });
+    console.log("Mail sent");
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ ok: false, error: "Ошибка отправки письма" });
+    console.error("Mail error:", err);
   }
 });
 
-// Проверка сервера
-app.get("/", (req, res) => {
-  res.send("Бэкенд живой!");
-});
-
-// Порт Railway
-app.listen(process.env.PORT || 3000, () => {
+// ⚡ Порт Railway
+app.listen(process.env.PORT || 8080, () => {
   console.log("Server is running");
 });
