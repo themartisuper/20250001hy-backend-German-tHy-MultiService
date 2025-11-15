@@ -1,33 +1,39 @@
 import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
+import 'dotenv/config';
 
 const app = express();
 
-// Позволяет фронту стучаться на бэк
-app.use(cors());
-// Позволяет принимать JSON с формы
+// Разрешаем только фронту с Vercel стучаться
+app.use(cors({
+  origin: 'https://20250001hy-german-t-hy-multi-servic.vercel.app/' // поменяй на свой фронт
+}));
+
 app.use(express.json());
 
-// Твой маршрут, куда будет отправляться форма
+// Эндпоинт для формы
 app.post("/send", async (req, res) => {
   const { name, email, message } = req.body;
 
+  if(!name || !email || !message) {
+    return res.status(400).json({ ok: false, error: "Все поля обязательны" });
+  }
+
   try {
-    // Транспорт SMTP (здесь поставишь свои данные)
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT),
       secure: false,
       auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
       }
     });
 
     await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: process.env.MAIL_TO,
+      from: process.env.SMTP_USER,
+      to: process.env.MAIL_TO, // куда будут приходить письма
       subject: "Новая заявка с сайта",
       text: `Имя: ${name}\nEmail: ${email}\nСообщение: ${message}`
     });
@@ -35,16 +41,16 @@ app.post("/send", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ ok: false });
+    res.status(500).json({ ok: false, error: "Ошибка отправки письма" });
   }
 });
 
-// Railway автоматически подставит порт
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server is running");
+// Проверка сервера
+app.get("/", (req, res) => {
+  res.send("Бэкенд живой!");
 });
 
-
-app.get("/", (req, res) => {
-  res.send("Бэкенд живой! Включи эту страницу в браузере через твой URL Railway");
+// Порт Railway
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server is running");
 });
