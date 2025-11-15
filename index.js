@@ -1,16 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+import express from "express";
+import cors from "cors";
+import nodemailer from "nodemailer";
+import 'dotenv/config';
 
 const app = express();
 
+// CORS для фронта
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-app.get('/', (req, res) => res.send('Бэкенд живой!'));
+app.get("/", (req, res) => res.send("Бэкенд живой!"));
 
-app.post('/send', async (req, res) => {
+app.post("/send", async (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !email || !message) return res.status(400).json({ ok: false });
 
