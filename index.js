@@ -16,7 +16,7 @@ app.post("/send", async (req, res) => {
   try {
     // Транспорт SMTP (здесь поставишь свои данные)
     const transporter = nodemailer.createTransport({
-      host: "smtp.youremailprovider.com",
+      host: "smtp.gmail.com",
       port: 587,
       secure: false,
       auth: {
