@@ -7,8 +7,9 @@ const app = express();
 
 // Разрешаем только фронту с Vercel стучаться
 app.use(cors({
-  origin: 'https://20250001hy-german-t-hy-multi-servic.vercel.app/' // поменяй на свой фронт
+  origin: '*' // временно для теста
 }));
+
 
 app.use(express.json());
 
