@@ -5,18 +5,21 @@ import 'dotenv/config';
 
 const app = express();
 
-// Разрешаем только фронту с Vercel стучаться
+// CORS для твоего фронта на Vercel
 app.use(cors({
-  origin: 'https://20250001hy-german-t-hy-multi-servic.vercel.app/' // поменяй на свой фронт
+  origin: 'https://20250001hy-german-t-hy-multi-servic.vercel.app/' // сюда нужно вставить URL фронта
 }));
 
 app.use(express.json());
 
-// Эндпоинт для формы
+app.get("/", (req, res) => {
+  res.send("Бэкенд живой!");
+});
+
 app.post("/send", async (req, res) => {
   const { name, email, message } = req.body;
 
-  if(!name || !email || !message) {
+  if(!name || !email || !message){
     return res.status(400).json({ ok: false, error: "Все поля обязательны" });
   }
 
@@ -33,24 +36,18 @@ app.post("/send", async (req, res) => {
 
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: process.env.MAIL_TO, // куда будут приходить письма
+      to: process.env.MAIL_TO,
       subject: "Новая заявка с сайта",
       text: `Имя: ${name}\nEmail: ${email}\nСообщение: ${message}`
     });
 
     res.json({ ok: true });
   } catch (err) {
-    console.error(err);
+    console.error("Ошибка отправки письма:", err);
     res.status(500).json({ ok: false, error: "Ошибка отправки письма" });
   }
 });
 
-// Проверка сервера
-app.get("/", (req, res) => {
-  res.send("Бэкенд живой!");
-});
-
-// Порт Railway
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server is running");
-});
+// Railway сам подставляет порт
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
